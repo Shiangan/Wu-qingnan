@@ -456,6 +456,9 @@
         <div class="header-top">
             <img src="image/logo.ico" class="top-logo" alt="祥安生命 Logo">
             <div class="top-action-bar">
+                <button class="top-btn" id="bgmBtn" onclick="toggleBGM()" aria-label="背景音樂開關">
+                    <img id="bgmIcon" src="https://img.icons8.com/material-outlined/24/777777/musical-notes.png" alt=""> 音樂
+                </button>
                 <button class="top-btn" onclick="copyText()" aria-label="複製奠禮資訊">
                     <img src="https://img.icons8.com/material-outlined/24/777777/copy.png" alt=""> 複製資訊
                 </button>
@@ -729,17 +732,48 @@
 🔗 雲端訃告詳情：${window.location.href}`;
 
     /* ════════════════════════════════
-       背景音樂：首次互動後自動播放
+       背景音樂：首次互動後自動播放 + 可開關（暫停後續播）
     ════════════════════════════════ */
     let bgmStarted = false;
+    const ICON_PLAY  = 'https://img.icons8.com/material-outlined/24/777777/musical-notes.png';
+    const ICON_PAUSE = 'https://img.icons8.com/material-outlined/24/777777/no-audio.png';
+
+    function updateBgmIcon(isPlaying) {
+        const icon = document.getElementById('bgmIcon');
+        const btn  = document.getElementById('bgmBtn');
+        if (!icon || !btn) return;
+        icon.src = isPlaying ? ICON_PLAY : ICON_PAUSE;
+        btn.setAttribute('aria-label', isPlaying ? '暫停背景音樂' : '播放背景音樂');
+    }
+
     function startBGM() {
         if (bgmStarted) return;
         bgmStarted = true;
         bgm.volume = 0.4;
-        bgm.play().catch(() => {});
+        bgm.play().then(() => updateBgmIcon(true)).catch(() => {});
     }
+
+    function toggleBGM() {
+        // 若尚未開始過，先啟動
+        if (!bgmStarted) {
+            startBGM();
+            return;
+        }
+        if (bgm.paused) {
+            bgm.play().then(() => updateBgmIcon(true)).catch(() => {});
+        } else {
+            bgm.pause();
+            updateBgmIcon(false);
+        }
+    }
+
+    // 首次點擊／觸碰頁面時自動開始（與原本行為一致）
     document.addEventListener('click',      startBGM, { once: true });
     document.addEventListener('touchstart', startBGM, { once: true });
+
+    // 音樂自然結束（雖有 loop，仍保險）或發生錯誤時更新圖示
+    bgm.addEventListener('play',  () => updateBgmIcon(true));
+    bgm.addEventListener('pause', () => updateBgmIcon(false));
 
     /* ════════════════════════════════
        Scroll reveal（含書法區）
